@@ -48,3 +48,13 @@ class StudentManager:
             self.save_data()
             return True
         return False
+    
+    def update_marks(self, name, new_marks):
+        student = self.find_student(name)
+        if student:
+            student.marks = new_marks
+            self.save_data()
+            return True
+        return False
+    
+    

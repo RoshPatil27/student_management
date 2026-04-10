@@ -10,7 +10,8 @@ def main():
         print("2. View Students")
         print("3. Search Student")
         print("4. Delete Student")
-        print("5. Exit")
+        print("5. Update Marks")
+        print("6. Exit")
 
         choice = input("Enter choice: ")
 
@@ -42,11 +43,21 @@ def main():
                 print("Student not found")
 
         elif choice == "5":
+            name = input("Enter student name: ")
+            marks = get_marks_input()
+            if manager.update_marks(name, marks):
+                print("Marks updated")
+            else:
+                print("Student not found")
+
+        elif choice == "6":
             print("Exiting...")
             break
 
         else:
-            print("Invalid choice")
+            print("Invalid choice. Please try again.")
+
+    manager.save_data()
 
 if __name__ == "__main__":
     main()
