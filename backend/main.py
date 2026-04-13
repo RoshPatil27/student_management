@@ -1,63 +1,104 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from manager import StudentManager
-from utils import get_marks_input
 
-def main():
-    manager = StudentManager()
+app = Flask(__name__)
+CORS(app)
 
-    while True:
-        print("\n===== Student Management System =====")
-        print("1. Add Student")
-        print("2. View Students")
-        print("3. Search Student")
-        print("4. Delete Student")
-        print("5. Update Marks")
-        print("6. Exit")
+manager = StudentManager()
 
-        choice = input("Enter choice: ")
+# ✅ 1. Add Student
+@app.route("/students", methods=["POST"])
+def add_student():
+    data = request.get_json()
 
-        if choice == "1":
-            name = input("Enter student name: ")
-            marks = get_marks_input()
-            manager.add_student(name, marks)
-            print("Student added successfully!")
+    name = data.get("name")
+    marks = data.get("marks")
 
-        elif choice == "2":
-            manager.display_students()
+    if not name or not marks:
+        return jsonify({"error": "Invalid input"}), 400
 
-        elif choice == "3":
-            name = input("Enter name to search: ")
-            student = manager.find_student(name)
-            if student:
-                print(f"Name: {student.name}")
-                print(f"Marks: {student.marks}")
-                print(f"Average: {student.average():.2f}")
-                print(f"Grade: {student.grade()}")
-            else:
-                print("Student not found")
+    manager.add_student(name, marks)
 
-        elif choice == "4":
-            name = input("Enter name to delete: ")
-            if manager.delete_student(name):
-                print("Student deleted successfully!")
-            else:
-                print("Student not found")
+    # ✅ get newly added student
+    student = manager.find_student(name)
 
-        elif choice == "5":
-            name = input("Enter student name: ")
-            marks = get_marks_input()
-            if manager.update_marks(name, marks):
-                print("Marks updated")
-            else:
-                print("Student not found")
+    return jsonify({
+        "name": student.name,
+        "marks": student.marks,
+        "average": round(student.average(), 2),
+        "grade": student.grade()
+    })
 
-        elif choice == "6":
-            print("Exiting...")
-            break
+# ✅ 2. View All Students
+@app.route("/students", methods=["GET"])
+def get_students():
+    students = manager.students
 
-        else:
-            print("Invalid choice. Please try again.")
+    result = []
+    for s in students:
+        result.append({
+            "name": s.name,
+            "marks": s.marks,
+            "average": round(s.average(), 2),
+            "grade": s.grade()
+        })
 
-    manager.save_data()
+    return jsonify(result)
+
+
+# ✅ 3. Search Student
+@app.route("/students/<name>", methods=["GET"])
+def get_student(name):
+    student = manager.find_student(name)
+
+    if not student:
+        return jsonify({"error": "Student not found"}), 404
+
+    return jsonify({
+        "name": student.name,
+        "marks": student.marks,
+        "average": round(student.average(), 2),
+        "grade": student.grade()
+    })
+
+
+# ✅ 4. Delete Student
+@app.route("/students/<name>", methods=["DELETE"])
+def delete_student(name):
+    if manager.delete_student(name):
+        manager.save_data()
+        return jsonify({"message": "Student deleted successfully"})
+
+    return jsonify({"error": "Student not found"}), 404
+
+
+# ✅ 5. Update Marks
+@app.route("/students/<name>", methods=["PUT"])
+def update_marks(name):
+    data = request.get_json()
+    marks = data.get("marks")
+
+    if not marks:
+        return jsonify({"error": "Invalid input"}), 400
+
+    if manager.update_marks(name, marks):
+        student = manager.find_student(name)
+
+        return jsonify({
+            "name": student.name,
+            "marks": student.marks,
+            "average": round(student.average(), 2),
+            "grade": student.grade()
+        })
+
+    return jsonify({"error": "Student not found"}), 404
+
+# ✅ Root test
+@app.route("/")
+def home():
+    return "Student API Running 🚀"
+
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
